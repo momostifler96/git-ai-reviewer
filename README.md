@@ -112,8 +112,6 @@ npm install -g @vscode/vsce
 vsce package
 ```
 
-> Pensez à changer `publisher` dans `package.json` avant de publier.
-
 ## Dépannage
 
 - **« no AI provider is configured »** — ajoutez au moins un provider dans `gitAiReview.providers`.

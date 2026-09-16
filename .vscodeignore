@@ -6,5 +6,3 @@ tsconfig.json
 **/*.map
 **/*.ts
 .gitignore
-README.md
-CHANGELOG.md
