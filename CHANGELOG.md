@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1 — 2026-09-16
+
+- Raised the default AI request timeout from 60s to 5 minutes (local models such as Ollama need it, especially while the model loads on first call).
+- The timeout error message now points to the `gitAiReview.request.timeoutMs` setting.
+
 ## 0.2.0 — 2026-09-16
 
 - Dedicated provider per feature: `gitAiReview.reviewProvider` and `gitAiReview.commitProvider` override the default `gitAiReview.activeProvider` (empty = inherit). Each provider keeps its own API key.

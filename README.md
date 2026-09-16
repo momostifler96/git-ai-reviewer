@@ -103,7 +103,7 @@ Exemple de prompt de revue personnalisé :
 | --- | --- | --- |
 | `gitAiReview.diff.maxChars` | `60000` | Taille max du diff envoyé à l'IA (au-delà : tronqué, et l'IA en est avertie). |
 | `gitAiReview.diff.includeUntracked` | `true` | Inclure les fichiers non suivis dans la revue des changements non commités. |
-| `gitAiReview.request.timeoutMs` | `60000` | Timeout HTTP des requêtes IA. |
+| `gitAiReview.request.timeoutMs` | `300000` | Timeout HTTP des requêtes IA (5 min par défaut — les modèles locaux comme Ollama sont lents, surtout au premier appel pendant le chargement du modèle). |
 
 ## Développement
 
@@ -127,5 +127,5 @@ vsce package
 
 - **« no AI provider is configured »** — ajoutez au moins un provider dans `gitAiReview.providers`.
 - **HTTP 401/403** — clé API manquante ou invalide : lancez `Git AI: Set API Key for Provider`.
-- **Timeout** — augmentez `gitAiReview.request.timeoutMs` (les modèles locaux peuvent être lents).
+- **Timeout** — augmentez `gitAiReview.request.timeoutMs` (défaut : 5 min). Avec Ollama, le premier appel inclut le chargement du modèle dans la mémoire : préchargez-le (`ollama run <modèle>` puis quittez) ou réduisez `diff.maxChars`.
 - **« no Git repository found »** — ouvrez un dossier contenant un dépôt Git (`.git`).

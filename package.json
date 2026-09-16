@@ -2,7 +2,7 @@
   "name": "git-ai-reviewer",
   "displayName": "Git AI Reviewer",
   "description": "Review uncommitted Git changes and generate commit messages using any OpenAI-compatible AI provider, with fully custom system prompts.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "momostifler96",
   "license": "MIT",
   "repository": {
@@ -215,8 +215,8 @@
         "gitAiReview.request.timeoutMs": {
           "type": "number",
           "order": 10,
-          "default": 60000,
-          "markdownDescription": "HTTP timeout for AI requests, in milliseconds."
+          "default": 300000,
+          "markdownDescription": "HTTP timeout for AI requests, in milliseconds (default: 5 minutes — local models such as Ollama can be slow, especially on first call while the model loads)."
         }
       }
     }

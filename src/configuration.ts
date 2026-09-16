@@ -108,7 +108,7 @@ export function getSettings(): AiSettings {
         activeProvider,
         reviewProvider,
         commitProvider,
-        timeoutMs: config.get<number>('request.timeoutMs', 60_000),
+        timeoutMs: config.get<number>('request.timeoutMs', 300_000),
         outputLanguage: config.get<string>('outputLanguage', 'English'),
         diffMaxChars: Math.max(1_000, config.get<number>('diff.maxChars', 60_000)),
         includeUntracked: config.get<boolean>('diff.includeUntracked', true),

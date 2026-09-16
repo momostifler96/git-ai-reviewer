@@ -82,7 +82,8 @@ export async function requestCompletion(request: CompletionRequest): Promise<str
     } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
             throw new Error(
-                `Request to "${provider.name}" timed out after ${Math.round(request.timeoutMs / 1000)}s.`,
+                `Request to "${provider.name}" timed out after ${Math.round(request.timeoutMs / 1000)}s` +
+                    ' (increase the setting "gitAiReview.request.timeoutMs" if your model is slow).',
             );
         }
         throw error;
