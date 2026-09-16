@@ -2,7 +2,7 @@
   "name": "git-ai-reviewer",
   "displayName": "Git AI Reviewer",
   "description": "Review uncommitted Git changes and generate commit messages using any OpenAI-compatible AI provider, with fully custom system prompts.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "momostifler96",
   "license": "MIT",
   "repository": {
@@ -45,7 +45,7 @@
       },
       {
         "command": "gitAiReview.selectProvider",
-        "title": "Git AI: Select Active Provider",
+        "title": "Git AI: Select Providers",
         "icon": "$(sparkle)"
       },
       {
@@ -126,11 +126,23 @@
           "type": "string",
           "order": 2,
           "default": "openai",
-          "markdownDescription": "Name of the provider from `#gitAiReview.providers#` used for review and commit messages. Falls back to the first provider if not found."
+          "markdownDescription": "Default provider, used for every feature. Name of a provider from `#gitAiReview.providers#`; falls back to the first provider if not found. Can be overridden per feature with `#gitAiReview.reviewProvider#` and `#gitAiReview.commitProvider#`."
+        },
+        "gitAiReview.reviewProvider": {
+          "type": "string",
+          "order": 3,
+          "default": "",
+          "markdownDescription": "Provider dedicated to **code review**. Empty (default) = use the default provider (`#gitAiReview.activeProvider#`). Easiest way to set it: command **Git AI: Select Providers**."
+        },
+        "gitAiReview.commitProvider": {
+          "type": "string",
+          "order": 4,
+          "default": "",
+          "markdownDescription": "Provider dedicated to **commit messages**. Empty (default) = use the default provider (`#gitAiReview.activeProvider#`). Easiest way to set it: command **Git AI: Select Providers**."
         },
         "gitAiReview.outputLanguage": {
           "type": "string",
-          "order": 3,
+          "order": 5,
           "enum": [
             "English",
             "Français",
@@ -176,33 +188,33 @@
         },
         "gitAiReview.prompts.reviewSystem": {
           "type": "string",
-          "order": 4,
+          "order": 6,
           "markdownDescription": "System prompt used for code review. `{language}` is replaced by `#gitAiReview.outputLanguage#`.",
           "editPresentation": "multilineText",
           "default": "You are a senior software engineer performing a code review on uncommitted Git changes.\n\nAnalyze the diff provided by the user and produce a Markdown report containing:\n\n1. **Summary** — a short overview of what the changes do.\n2. **Findings** — issues grouped by severity:\n   - 🔴 **Critical** — bugs, data loss, security vulnerabilities\n   - 🟠 **Major** — logic errors, performance problems, missing error handling\n   - 🟡 **Minor** — readability, naming, small improvements\n\n   For each finding, give the file path, a short explanation, and a concrete suggested fix.\n3. **Risks & missing tests** — anything that should be verified before committing.\n\nRules:\n- Be concise and actionable; skip pure style nitpicks.\n- If the diff is truncated or incomplete, say so and review only what is visible.\n- If everything looks fine, say so explicitly.\n- Respond in {language}."
         },
         "gitAiReview.prompts.commitSystem": {
           "type": "string",
-          "order": 5,
+          "order": 7,
           "markdownDescription": "System prompt used to generate commit messages. `{language}` is replaced by `#gitAiReview.outputLanguage#`.",
           "editPresentation": "multilineText",
           "default": "You are an expert at writing high-quality Git commit messages.\n\nYou will receive the diff of the changes to be committed. Write exactly ONE commit message that follows the Conventional Commits specification:\n\n<type>(<optional scope>): <summary>\n\n<optional body explaining what and why, wrapped at about 100 characters>\n\nRules:\n- Output ONLY the commit message — no quotes, no code fences, no explanations before or after.\n- Summary in the imperative mood ('add', not 'added'), max ~72 characters, no trailing period.\n- Pick the most accurate type: feat, fix, refactor, perf, test, docs, build, ci, chore, style.\n- Add a body only when the 'why' is not obvious from the summary.\n- Mention breaking changes with a 'BREAKING CHANGE:' footer when relevant.\n- Write the message in {language}."
         },
         "gitAiReview.diff.maxChars": {
           "type": "number",
-          "order": 6,
+          "order": 8,
           "default": 60000,
           "markdownDescription": "Maximum diff size (in characters) sent to the AI. Larger diffs are truncated."
         },
         "gitAiReview.diff.includeUntracked": {
           "type": "boolean",
-          "order": 7,
+          "order": 9,
           "default": true,
           "markdownDescription": "Include untracked (new) files when reviewing all uncommitted changes."
         },
         "gitAiReview.request.timeoutMs": {
           "type": "number",
-          "order": 8,
+          "order": 10,
           "default": 60000,
           "markdownDescription": "HTTP timeout for AI requests, in milliseconds."
         }

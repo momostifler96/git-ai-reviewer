@@ -13,7 +13,7 @@ Extension VS Code qui :
 | --- | --- |
 | `Git AI: Review Uncommitted Changes` | Envoie le diff non commité (staged + unstaged + fichiers non suivis) à l'IA et affiche le rapport de revue dans un panneau Markdown. |
 | `Git AI: Generate Commit Message` | Génère un message de commit à partir des changements **stagés**. Si rien n'est stagé, propose d'utiliser tous les changements non commités. Le résultat est inséré dans la zone de commit du panneau Source Control (copié dans le presse-papier si l'API Git intégrée n'est pas disponible). |
-| `Git AI: Select Active Provider` | Change le provider actif (quick pick). |
+| `Git AI: Select Providers` | Configure le provider par défaut, celui des revues et celui des commits (2 sélections, avec option d'héritage du défaut). |
 | `Git AI: Set API Key for Provider` | Stocke la clé API d'un provider dans le **secret storage** de VS Code (recommandé, jamais écrit en clair dans settings.json). |
 
 Les deux premières commandes sont aussi accessibles via des icônes dans la barre de titre du panneau **Source Control**.
@@ -47,6 +47,8 @@ Le réglage `gitAiReview.providers` s'affiche comme un **tableau éditable** dan
     }
   ],
   "gitAiReview.activeProvider": "openai",
+  "gitAiReview.reviewProvider": "ollama",
+  "gitAiReview.commitProvider": "",
   "gitAiReview.outputLanguage": "Français"
 }
 ```
@@ -64,6 +66,15 @@ Champs d'un provider :
 | `headers` | — | En-têtes HTTP additionnels au format `Nom: Valeur` séparés par `;` (ex. `HTTP-Referer: https://monapp.dev; X-Title: Git AI`). Un objet JSON `{ "Nom": "Valeur" }` est aussi accepté dans `settings.json`. |
 
 Les lignes incomplètes (sans `name`, `baseUrl` ou `model`) sont ignorées.
+
+### Provider par usage
+
+Par défaut, toutes les fonctionnalités utilisent `gitAiReview.activeProvider`. Vous pouvez dédiér un provider par fonction :
+
+- `gitAiReview.reviewProvider` — revues de code (ex. un modèle local pour ne rien envoyer à l'extérieur) ;
+- `gitAiReview.commitProvider` — génération des messages de commit (ex. un modèle rapide et léger).
+
+Vide (défaut) = hérite du provider par défaut. La commande `Git AI: Select Providers` permet de régler les trois slots en deux sélections : elle affiche le provider **effectif** de chaque slot, et propose l'option « Same as the default provider » pour réinitialiser un slot. Chaque provider garde sa propre clé API (command `Git AI: Set API Key for Provider`).
 
 Clés API : la commande `Git AI: Set API Key for Provider` stocke la clé dans le **SecretStorage** de VS Code (chiffré par l'OS). La clé du settings (`apiKey`) n'est utilisée que si aucune clé n'est présente dans le secret storage. Les providers locaux (Ollama, LM Studio) n'ont pas besoin de clé.
 

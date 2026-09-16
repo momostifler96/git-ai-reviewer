@@ -22,7 +22,7 @@ async function run(context: vscode.ExtensionContext): Promise<void> {
     }
 
     const settings = getSettings();
-    const provider = settings.activeProvider;
+    const provider = settings.reviewProvider;
     if (!provider) {
         await promptConfigureProvider();
         return;
@@ -43,7 +43,7 @@ async function run(context: vscode.ExtensionContext): Promise<void> {
     const report = await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
-            title: `Git AI: reviewing ${changes.files.length} file(s) with ${provider.model}…`,
+            title: `Git AI: reviewing ${changes.files.length} file(s) with ${provider.name} (${provider.model})…`,
         },
         () => requestReview(provider, apiKey, settings, changes),
     );

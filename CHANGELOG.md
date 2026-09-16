@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0 — 2026-09-16
+
+- Dedicated provider per feature: `gitAiReview.reviewProvider` and `gitAiReview.commitProvider` override the default `gitAiReview.activeProvider` (empty = inherit). Each provider keeps its own API key.
+- The `Git AI: Select Providers` command now configures the default, review and commit slots in two quick picks, with a "Same as the default provider" reset option.
+
 ## 0.1.0 — 2026-09-16
 
 - Initial release.

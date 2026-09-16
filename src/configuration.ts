@@ -14,7 +14,12 @@ export interface ProviderConfig {
 export interface AiSettings {
     readonly providers: readonly ProviderConfig[];
     readonly activeProviderName: string;
+    /** Default provider, used when no specific one is set. */
     readonly activeProvider: ProviderConfig | undefined;
+    /** Provider used for code review (falls back to activeProvider). */
+    readonly reviewProvider: ProviderConfig | undefined;
+    /** Provider used for commit messages (falls back to activeProvider). */
+    readonly commitProvider: ProviderConfig | undefined;
     readonly timeoutMs: number;
     readonly outputLanguage: string;
     readonly diffMaxChars: number;
@@ -91,10 +96,18 @@ export function getSettings(): AiSettings {
         .filter((provider): provider is ProviderConfig => provider !== undefined);
     const requested = config.get<string>('activeProvider', 'openai');
     const activeProvider = providers.find((provider) => provider.name === requested) ?? providers[0];
+    const reviewOverride = config.get<string>('reviewProvider', '').trim();
+    const commitOverride = config.get<string>('commitProvider', '').trim();
+    const reviewProvider =
+        providers.find((provider) => provider.name === reviewOverride) ?? activeProvider;
+    const commitProvider =
+        providers.find((provider) => provider.name === commitOverride) ?? activeProvider;
     return {
         providers,
         activeProviderName: activeProvider?.name ?? requested,
         activeProvider,
+        reviewProvider,
+        commitProvider,
         timeoutMs: config.get<number>('request.timeoutMs', 60_000),
         outputLanguage: config.get<string>('outputLanguage', 'English'),
         diffMaxChars: Math.max(1_000, config.get<number>('diff.maxChars', 60_000)),

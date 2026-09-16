@@ -21,7 +21,7 @@ async function run(context: vscode.ExtensionContext): Promise<void> {
     }
 
     const settings = getSettings();
-    const provider = settings.activeProvider;
+    const provider = settings.commitProvider;
     if (!provider) {
         await promptConfigureProvider();
         return;
@@ -57,7 +57,7 @@ async function run(context: vscode.ExtensionContext): Promise<void> {
     const raw = await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
-            title: `Git AI: drafting commit message with ${provider.model}…`,
+            title: `Git AI: drafting commit message with ${provider.name} (${provider.model})…`,
         },
         () =>
             requestCompletion({
