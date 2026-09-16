@@ -1,5 +1,7 @@
 # Git AI Reviewer — extension VS Code
 
+> **Édition IntelliJ / JetBrains** : une version plugin IntelliJ (mêmes fonctionnalités) se trouve dans le dossier [`intellij/`](intellij/README.md).
+
 Extension VS Code qui :
 
 - 🔍 **fait relire vos modifications Git non commitées** (staged + unstaged + fichiers nouveaux) par une IA, avec un rapport Markdown classé par sévérité (critique / majeur / mineur) ;

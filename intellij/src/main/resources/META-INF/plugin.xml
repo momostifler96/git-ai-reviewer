@@ -1,0 +1,49 @@
+<idea-plugin>
+    <id>com.github.momostifler96.git-ai-reviewer</id>
+    <name>Git AI Reviewer</name>
+    <vendor>momostifler96</vendor>
+
+    <description><![CDATA[
+    <p>Review uncommitted Git changes and generate commit messages using any OpenAI-compatible AI provider, with fully custom system prompts.</p>
+    <ul>
+      <li><b>Review Uncommitted Changes (AI)</b> — sends the uncommitted diff (staged + unstaged + untracked files) to your provider and shows a Markdown report in a tool window.</li>
+      <li><b>Generate Commit Message (AI)</b> — drafts a Conventional Commits message from the staged changes and copies it to the clipboard, ready to paste in the commit dialog.</li>
+      <li>Configurable OpenAI-compatible providers (OpenAI, Ollama, LM Studio, OpenRouter, Groq, vLLM…), with a dedicated provider for review, commit, or a default one for everything.</li>
+      <li>Fully custom system prompts for review and commit messages, with a <code>{language}</code> placeholder.</li>
+      <li>API keys stored in the IDE password safe.</li>
+    </ul>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>Git4Idea</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <configurable
+            id="gitAiReview.settings"
+            parentId="tools"
+            instance="com.github.momostifler96.gitaireviewer.settings.SettingsConfigurable"
+            displayName="Git AI Reviewer"/>
+        <toolWindow
+            id="Git AI Review"
+            anchor="bottom"
+            factoryClass="com.github.momostifler96.gitaireviewer.ui.ReviewToolWindowFactory"/>
+        <notificationGroup id="Git AI Review" displayType="BALLOON"/>
+    </extensions>
+
+    <actions>
+        <action
+            id="GitAiReview.ReviewUncommitted"
+            class="com.github.momostifler96.gitaireviewer.actions.ReviewUncommittedAction"
+            text="Review Uncommitted Changes (AI)"
+            description="Send uncommitted changes to an AI provider and show a review report">
+            <add-to-group group-id="Git.MainMenu" anchor="last"/>
+        </action>
+        <action
+            id="GitAiReview.GenerateCommitMessage"
+            class="com.github.momostifler96.gitaireviewer.actions.GenerateCommitMessageAction"
+            text="Generate Commit Message (AI)"
+            description="Generate a commit message from staged changes with an AI provider">
+            <add-to-group group-id="Git.MainMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>
