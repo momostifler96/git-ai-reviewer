@@ -1,0 +1,221 @@
+{
+  "name": "git-ai-reviewer",
+  "displayName": "Git AI Reviewer",
+  "description": "Review uncommitted Git changes and generate commit messages using any OpenAI-compatible AI provider, with fully custom system prompts.",
+  "version": "0.1.0",
+  "publisher": "magma",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "SCM Providers",
+    "Machine Learning",
+    "Other"
+  ],
+  "keywords": [
+    "git",
+    "ai",
+    "code review",
+    "commit message",
+    "openai",
+    "ollama",
+    "openrouter"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gitAiReview.reviewUncommitted",
+        "title": "Git AI: Review Uncommitted Changes",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "gitAiReview.generateCommitMessage",
+        "title": "Git AI: Generate Commit Message",
+        "icon": "$(git-commit)"
+      },
+      {
+        "command": "gitAiReview.selectProvider",
+        "title": "Git AI: Select Active Provider",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "gitAiReview.setApiKey",
+        "title": "Git AI: Set API Key for Provider",
+        "icon": "$(key)"
+      }
+    ],
+    "menus": {
+      "scm/title": [
+        {
+          "command": "gitAiReview.generateCommitMessage",
+          "when": "scmProvider == git",
+          "group": "navigation@1"
+        },
+        {
+          "command": "gitAiReview.reviewUncommitted",
+          "when": "scmProvider == git",
+          "group": "navigation@2"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Git AI Reviewer",
+      "properties": {
+        "gitAiReview.providers": {
+          "type": "array",
+          "order": 1,
+          "markdownDescription": "AI providers (any **OpenAI-compatible** `/chat/completions` endpoint). Shown as an editable table in the Settings UI — each row needs `name`, `baseUrl` and `model`. API keys are better stored with the command **Git AI: Set API Key for Provider** (secure secret storage).\n\nExample:\n```json\n[\n  { \"name\": \"openai\", \"baseUrl\": \"https://api.openai.com/v1\", \"model\": \"gpt-4o-mini\" },\n  { \"name\": \"ollama\", \"baseUrl\": \"http://localhost:11434/v1\", \"model\": \"qwen2.5-coder:7b\", \"headers\": \"X-Title: Git AI Reviewer\" }\n]\n```",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "baseUrl",
+              "model"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Provider name (unique identifier)"
+              },
+              "baseUrl": {
+                "type": "string",
+                "description": "OpenAI-compatible base URL, e.g. https://api.openai.com/v1"
+              },
+              "model": {
+                "type": "string",
+                "description": "Model id, e.g. gpt-4o-mini"
+              },
+              "apiKey": {
+                "type": "string",
+                "description": "API key (plain settings — prefer the 'Git AI: Set API Key' command)"
+              },
+              "temperature": {
+                "type": "number",
+                "description": "Sampling temperature (optional)"
+              },
+              "maxTokens": {
+                "type": "number",
+                "description": "Max completion tokens (optional)"
+              },
+              "headers": {
+                "type": "string",
+                "description": "Extra HTTP headers — 'Name: Value' pairs separated by ';' (e.g. HTTP-Referer: https://myapp.dev; X-Title: My App)"
+              }
+            }
+          },
+          "default": [
+            {
+              "name": "openai",
+              "baseUrl": "https://api.openai.com/v1",
+              "model": "gpt-4o-mini"
+            }
+          ]
+        },
+        "gitAiReview.activeProvider": {
+          "type": "string",
+          "order": 2,
+          "default": "openai",
+          "markdownDescription": "Name of the provider from `#gitAiReview.providers#` used for review and commit messages. Falls back to the first provider if not found."
+        },
+        "gitAiReview.outputLanguage": {
+          "type": "string",
+          "order": 3,
+          "enum": [
+            "English",
+            "Français",
+            "Español",
+            "Deutsch",
+            "Italiano",
+            "Português",
+            "Nederlands",
+            "Polski",
+            "Türkçe",
+            "Русский",
+            "Українська",
+            "العربية",
+            "हिन्दी",
+            "中文",
+            "日本語",
+            "한국어",
+            "Tiếng Việt",
+            "Indonesian"
+          ],
+          "enumDescriptions": [
+            "AI answers in English",
+            "AI answers in French",
+            "AI answers in Spanish",
+            "AI answers in German",
+            "AI answers in Italian",
+            "AI answers in Portuguese",
+            "AI answers in Dutch",
+            "AI answers in Polish",
+            "AI answers in Turkish",
+            "AI answers in Russian",
+            "AI answers in Ukrainian",
+            "AI answers in Arabic",
+            "AI answers in Hindi",
+            "AI answers in Chinese",
+            "AI answers in Japanese",
+            "AI answers in Korean",
+            "AI answers in Vietnamese",
+            "AI answers in Indonesian"
+          ],
+          "default": "English",
+          "markdownDescription": "Language of AI answers (reviews and commit messages). Selected from a dropdown; injected into system prompts in place of the `{language}` placeholder. Any other value can still be typed manually in `settings.json`."
+        },
+        "gitAiReview.prompts.reviewSystem": {
+          "type": "string",
+          "order": 4,
+          "markdownDescription": "System prompt used for code review. `{language}` is replaced by `#gitAiReview.outputLanguage#`.",
+          "editPresentation": "multilineText",
+          "default": "You are a senior software engineer performing a code review on uncommitted Git changes.\n\nAnalyze the diff provided by the user and produce a Markdown report containing:\n\n1. **Summary** — a short overview of what the changes do.\n2. **Findings** — issues grouped by severity:\n   - 🔴 **Critical** — bugs, data loss, security vulnerabilities\n   - 🟠 **Major** — logic errors, performance problems, missing error handling\n   - 🟡 **Minor** — readability, naming, small improvements\n\n   For each finding, give the file path, a short explanation, and a concrete suggested fix.\n3. **Risks & missing tests** — anything that should be verified before committing.\n\nRules:\n- Be concise and actionable; skip pure style nitpicks.\n- If the diff is truncated or incomplete, say so and review only what is visible.\n- If everything looks fine, say so explicitly.\n- Respond in {language}."
+        },
+        "gitAiReview.prompts.commitSystem": {
+          "type": "string",
+          "order": 5,
+          "markdownDescription": "System prompt used to generate commit messages. `{language}` is replaced by `#gitAiReview.outputLanguage#`.",
+          "editPresentation": "multilineText",
+          "default": "You are an expert at writing high-quality Git commit messages.\n\nYou will receive the diff of the changes to be committed. Write exactly ONE commit message that follows the Conventional Commits specification:\n\n<type>(<optional scope>): <summary>\n\n<optional body explaining what and why, wrapped at about 100 characters>\n\nRules:\n- Output ONLY the commit message — no quotes, no code fences, no explanations before or after.\n- Summary in the imperative mood ('add', not 'added'), max ~72 characters, no trailing period.\n- Pick the most accurate type: feat, fix, refactor, perf, test, docs, build, ci, chore, style.\n- Add a body only when the 'why' is not obvious from the summary.\n- Mention breaking changes with a 'BREAKING CHANGE:' footer when relevant.\n- Write the message in {language}."
+        },
+        "gitAiReview.diff.maxChars": {
+          "type": "number",
+          "order": 6,
+          "default": 60000,
+          "markdownDescription": "Maximum diff size (in characters) sent to the AI. Larger diffs are truncated."
+        },
+        "gitAiReview.diff.includeUntracked": {
+          "type": "boolean",
+          "order": 7,
+          "default": true,
+          "markdownDescription": "Include untracked (new) files when reviewing all uncommitted changes."
+        },
+        "gitAiReview.request.timeoutMs": {
+          "type": "number",
+          "order": 8,
+          "default": 60000,
+          "markdownDescription": "HTTP timeout for AI requests, in milliseconds."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "package": "npm run typecheck && node esbuild.js --production",
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.21.5",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "marked": "^12.0.2"
+  }
+}
