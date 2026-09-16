@@ -3,8 +3,15 @@
   "displayName": "Git AI Reviewer",
   "description": "Review uncommitted Git changes and generate commit messages using any OpenAI-compatible AI provider, with fully custom system prompts.",
   "version": "0.1.0",
-  "publisher": "magma",
+  "publisher": "momostifler96",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/momostifler96/git-ai-reviewer"
+  },
+  "bugs": {
+    "url": "https://github.com/momostifler96/git-ai-reviewer/issues"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
