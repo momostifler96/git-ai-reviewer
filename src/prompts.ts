@@ -33,6 +33,18 @@ Rules:
 - Mention breaking changes with a 'BREAKING CHANGE:' footer when relevant.
 - Write the message in {language}.`;
 
+/**
+ * Internal prompt used when a diff must be split across several requests: each part is
+ * summarized first, then the summaries are turned into one commit message.
+ */
+export const DEFAULT_DIFF_SUMMARY_PROMPT = `You are a technical assistant that summarizes code changes.
+
+You will receive one part (i of n) of a larger diff. List the concrete changes you see as concise bullet points (max 8):
+- one bullet per logical change, with the file path when relevant;
+- no generic filler, only what the diff actually shows.
+
+Output only the bullet points. Write in {language}.`;
+
 export function renderSystemPrompt(template: string, language: string): string {
     return template.split('{language}').join(language);
 }

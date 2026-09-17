@@ -66,6 +66,7 @@ class SettingsConfigurable : Configurable {
     private val commitPromptArea = JBTextArea(10, 70).apply { lineWrap = true; wrapStyleWord = true }
     private val timeoutSpinner = JSpinner(SpinnerNumberModel(300, 10, 3600, 10))
     private val maxCharsSpinner = JSpinner(SpinnerNumberModel(60000, 1000, 1000000, 5000))
+    private val chunkingCombo = ComboBox(arrayOf("chunk", "truncate"))
     private val includeUntrackedCheckBox = JBCheckBox("Include untracked (new) files in reviews")
 
     private var panel: JComponent? = null
@@ -92,7 +93,11 @@ class SettingsConfigurable : Configurable {
             .addLabeledComponent("System prompt — commit message", JBScrollPane(commitPromptArea))
             .addSeparator()
             .addLabeledComponent("Request timeout (seconds)", timeoutSpinner)
-            .addLabeledComponent("Max diff size (characters)", maxCharsSpinner)
+            .addLabeledComponent("Max diff size per request (characters)", maxCharsSpinner)
+            .addLabeledComponent(
+                "Oversized diff handling (chunk = several requests, truncate = cut)",
+                chunkingCombo,
+            )
             .addComponent(includeUntrackedCheckBox)
             .addComponentFillVertically(JBScrollPane(null), 0)
             .panel
@@ -154,6 +159,7 @@ class SettingsConfigurable : Configurable {
             commitPromptArea.text != state.commitSystemPrompt ||
             (timeoutSpinner.value as Number).toInt() * 1000 != state.timeoutMs ||
             (maxCharsSpinner.value as Number).toInt() != state.diffMaxChars ||
+            (chunkingCombo.selectedItem as? String ?: "chunk") != state.chunkingMode ||
             includeUntrackedCheckBox.isSelected != state.includeUntracked
     }
 
@@ -171,6 +177,7 @@ class SettingsConfigurable : Configurable {
         commitPromptArea.text = state.commitSystemPrompt.ifBlank { DEFAULT_COMMIT_PROMPT }
         timeoutSpinner.value = state.timeoutMs / 1000
         maxCharsSpinner.value = state.diffMaxChars
+        chunkingCombo.selectedItem = state.chunkingMode
         includeUntrackedCheckBox.isSelected = state.includeUntracked
     }
 
@@ -188,6 +195,7 @@ class SettingsConfigurable : Configurable {
         state.commitSystemPrompt = commitPromptArea.text.trim().ifBlank { DEFAULT_COMMIT_PROMPT }
         state.timeoutMs = (timeoutSpinner.value as Number).toInt() * 1000
         state.diffMaxChars = (maxCharsSpinner.value as Number).toInt()
+        state.chunkingMode = chunkingCombo.selectedItem as? String ?: "chunk"
         state.includeUntracked = includeUntrackedCheckBox.isSelected
         refreshProviderCombos()
     }

@@ -10,10 +10,12 @@ object GitService {
     enum class Mode { STAGED, ALL }
 
     data class DiffResult(
-        val diff: String,
+        /** Coherent parts of the diff — one entry per AI request. */
+        val chunks: List<String>,
         val files: List<String>,
         val stats: String,
         val branch: String,
+        /** True only when the content was actually cut (chunking mode "truncate"). */
         val truncated: Boolean,
     )
 
@@ -78,11 +80,17 @@ object GitService {
         return header + "@@ -0,0 +1," + shown.size + " @@\n$body\n$footer\n"
     }
 
-    fun collectDiff(root: String, mode: Mode, includeUntracked: Boolean, maxChars: Int): DiffResult {
+    fun collectDiff(
+        root: String,
+        mode: Mode,
+        includeUntracked: Boolean,
+        maxChars: Int,
+        chunking: String = "chunk",
+    ): DiffResult {
         val withHead = hasHead(root)
         val branch = currentBranch(root)
 
-        val parts = mutableListOf<String>()
+        val outputs = mutableListOf<String>()
         val stats = mutableListOf<String>()
         val files = sortedSetOf<String>()
 
@@ -91,7 +99,7 @@ object GitService {
             val names = (run(root, *(listOf("diff") + baseArgs + listOf("--name-only")).toTypedArray())?.second.orEmpty())
                 .lines().map { it.trim() }.filter { it.isNotEmpty() }
             val stat = (run(root, *(listOf("diff") + baseArgs + listOf("--stat")).toTypedArray())?.second.orEmpty()).trim()
-            if (patch.isNotBlank()) parts += patch
+            if (patch.isNotBlank()) outputs += patch
             files += names
             if (stat.isNotEmpty()) stats += stat
         }
@@ -111,25 +119,37 @@ object GitService {
             for (item in untracked.take(MAX_UNTRACKED_FILES)) {
                 val patch = untrackedDiff(root, item)
                 if (patch != null) {
-                    parts += patch
+                    outputs += patch
                     files += item
                 }
             }
         }
 
-        var diff = parts.joinToString("\n")
-        var truncated = false
-        if (diff.length > maxChars) {
-            truncated = true
-            diff = diff.substring(0, maxChars) + "\n\n[... diff truncated at $maxChars characters ...]"
+        val blocks = Chunking.splitIntoFileBlocks(outputs)
+        val statsText = stats.joinToString("\n")
+        val branchText = branch.ifEmpty { "(no commits yet)" }
+
+        if (chunking == "truncate") {
+            val joined = blocks.joinToString("\n")
+            return if (joined.length <= maxChars) {
+                DiffResult(listOf(joined), files.toList(), statsText, branchText, truncated = false)
+            } else {
+                DiffResult(
+                    chunks = listOf(joined.substring(0, maxChars) + "\n\n[... diff truncated at $maxChars characters ...]"),
+                    files = files.toList(),
+                    stats = statsText,
+                    branch = branchText,
+                    truncated = true,
+                )
+            }
         }
 
         return DiffResult(
-            diff = diff,
+            chunks = Chunking.buildChunks(blocks, maxChars),
             files = files.toList(),
-            stats = stats.joinToString("\n"),
-            branch = branch.ifEmpty { "(no commits yet)" },
-            truncated = truncated,
+            stats = statsText,
+            branch = branchText,
+            truncated = false,
         )
     }
 }

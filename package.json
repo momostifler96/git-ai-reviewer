@@ -2,7 +2,7 @@
   "name": "git-ai-reviewer",
   "displayName": "Git AI Reviewer",
   "description": "Review uncommitted Git changes and generate commit messages using any OpenAI-compatible AI provider, with fully custom system prompts.",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "publisher": "momostifler96",
   "license": "MIT",
   "repository": {
@@ -204,17 +204,31 @@
           "type": "number",
           "order": 8,
           "default": 60000,
-          "markdownDescription": "Maximum diff size (in characters) sent to the AI. Larger diffs are truncated."
+          "markdownDescription": "Maximum diff size **per AI request**, in characters. When the diff is larger: in `chunk` mode it is split into several coherent requests, in `truncate` mode it is cut."
+        },
+        "gitAiReview.diff.chunkingMode": {
+          "type": "string",
+          "order": 9,
+          "enum": [
+            "chunk",
+            "truncate"
+          ],
+          "enumDescriptions": [
+            "Split oversized diffs into coherent parts sent in separate requests (nothing is lost)",
+            "Cut the diff at the max size and send a single request (the rest is lost)"
+          ],
+          "default": "chunk",
+          "markdownDescription": "How to handle diffs larger than `#gitAiReview.diff.maxChars#`. **chunk** (default): the diff is split coherently — per file, then per hunk if a single file is oversized — and each part is sent in its own request (n parts = n requests); review reports are concatenated and commit messages are synthesized from per-part summaries. **truncate**: single request, diff cut at the limit."
         },
         "gitAiReview.diff.includeUntracked": {
           "type": "boolean",
-          "order": 9,
+          "order": 10,
           "default": true,
           "markdownDescription": "Include untracked (new) files when reviewing all uncommitted changes."
         },
         "gitAiReview.request.timeoutMs": {
           "type": "number",
-          "order": 10,
+          "order": 11,
           "default": 300000,
           "markdownDescription": "HTTP timeout for AI requests, in milliseconds (default: 5 minutes — local models such as Ollama can be slow, especially on first call while the model loads)."
         }

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { requestCompletion } from './ai/client';
 import { getSettings, resolveApiKey } from './configuration';
 import { collectDiff, getRepositoryRoot, UncommittedDiff } from './git';
-import { renderSystemPrompt } from './prompts';
+import { DEFAULT_DIFF_SUMMARY_PROMPT, renderSystemPrompt } from './prompts';
 import { promptConfigureProvider, showErrorWithSettings } from './ui';
 
 export async function generateCommitMessageCommand(context: vscode.ExtensionContext): Promise<void> {
@@ -31,14 +31,16 @@ async function run(context: vscode.ExtensionContext): Promise<void> {
         mode: 'staged',
         includeUntracked: false,
         maxChars: settings.diffMaxChars,
+        chunking: settings.chunkingMode,
     });
-    if (!changes.diff.trim()) {
+    if (changes.chunks.length === 0 || changes.chunks.every((chunk) => chunk.trim() === '')) {
         const all = await collectDiff(root, {
             mode: 'all',
             includeUntracked: settings.includeUntracked,
             maxChars: settings.diffMaxChars,
+            chunking: settings.chunkingMode,
         });
-        if (!all.diff.trim()) {
+        if (all.chunks.length === 0 || all.chunks.every((chunk) => chunk.trim() === '')) {
             vscode.window.showInformationMessage('Git AI: nothing to commit — no staged or uncommitted changes.');
             return;
         }
@@ -53,28 +55,70 @@ async function run(context: vscode.ExtensionContext): Promise<void> {
     }
 
     const apiKey = await resolveApiKey(provider, context.secrets);
+    const systemPrompt = renderSystemPrompt(settings.commitSystemPrompt, settings.outputLanguage);
+    let message = '';
 
-    const raw = await vscode.window.withProgress(
+    await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
-            title: `Git AI: drafting commit message with ${provider.name} (${provider.model})…`,
+            title:
+                `Git AI: drafting commit message with ${provider.name} (${provider.model})` +
+                (changes.chunks.length > 1 ? ` from ${changes.chunks.length} parts…` : '…'),
         },
-        () =>
-            requestCompletion({
-                provider,
-                apiKey,
-                timeoutMs: settings.timeoutMs,
-                messages: [
-                    {
-                        role: 'system',
-                        content: renderSystemPrompt(settings.commitSystemPrompt, settings.outputLanguage),
-                    },
-                    { role: 'user', content: buildCommitUserPrompt(changes) },
-                ],
-            }),
+        async (progress) => {
+            if (changes.chunks.length === 1) {
+                message = cleanCommitMessage(
+                    await requestCompletion({
+                        provider,
+                        apiKey,
+                        timeoutMs: settings.timeoutMs,
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: buildCommitUserPrompt(changes, 0) },
+                        ],
+                    }),
+                );
+                return;
+            }
+
+            // Multi-part flow: summarize each part, then write one message from the summaries.
+            const summaries: string[] = [];
+            for (let index = 0; index < changes.chunks.length; index++) {
+                progress.report({ message: `summarizing part ${index + 1}/${changes.chunks.length}` });
+                summaries.push(
+                    await requestCompletion({
+                        provider,
+                        apiKey,
+                        timeoutMs: settings.timeoutMs,
+                        messages: [
+                            {
+                                role: 'system',
+                                content: renderSystemPrompt(
+                                    DEFAULT_DIFF_SUMMARY_PROMPT,
+                                    settings.outputLanguage,
+                                ),
+                            },
+                            { role: 'user', content: buildSummaryUserPrompt(changes, index) },
+                        ],
+                    }),
+                );
+            }
+
+            progress.report({ message: 'drafting commit message' });
+            message = cleanCommitMessage(
+                await requestCompletion({
+                    provider,
+                    apiKey,
+                    timeoutMs: settings.timeoutMs,
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: buildCommitFromSummariesPrompt(changes, summaries) },
+                    ],
+                }),
+            );
+        },
     );
 
-    const message = cleanCommitMessage(raw);
     if (!message) {
         vscode.window.showErrorMessage('Git AI: the provider returned an empty commit message.');
         return;
@@ -90,15 +134,41 @@ async function run(context: vscode.ExtensionContext): Promise<void> {
     }
 }
 
-function buildCommitUserPrompt(changes: UncommittedDiff): string {
+function buildCommitUserPrompt(changes: UncommittedDiff, index: number): string {
     const sections: string[] = ['Write the commit message for the following changes.'];
+    if (changes.chunks.length > 1) {
+        sections.push(`(This is part ${index + 1} of ${changes.chunks.length} of the diff.)`);
+    }
     if (changes.stats.trim()) {
         sections.push('Diffstat:', '```', changes.stats.trim(), '```');
     }
     if (changes.truncated) {
         sections.push('WARNING: the diff was truncated.');
     }
-    sections.push('Diff:', '```diff', changes.diff, '```');
+    sections.push('Diff:', '```diff', changes.chunks[index], '```');
+    return sections.join('\n');
+}
+
+function buildSummaryUserPrompt(changes: UncommittedDiff, index: number): string {
+    return [
+        `Here is part ${index + 1} of ${changes.chunks.length} of the diff to commit:`,
+        '```diff',
+        changes.chunks[index],
+        '```',
+    ].join('\n');
+}
+
+function buildCommitFromSummariesPrompt(changes: UncommittedDiff, summaries: string[]): string {
+    const parts = summaries.map((summary, index) => `Part ${index + 1}:\n${summary.trim()}`);
+    const sections = [
+        'The changes to commit were too large for a single request.',
+        'Here is a summary of each part of the diff:',
+        ...parts.map((part) => `\n${part}`),
+    ];
+    if (changes.stats.trim()) {
+        sections.push('\nDiffstat of the full change set:', '```', changes.stats.trim(), '```');
+    }
+    sections.push('\nWrite the commit message for these changes.');
     return sections.join('\n');
 }
 

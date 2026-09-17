@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0 — 2026-09-17
+
+- Chunked requests for oversized diffs (`gitAiReview.diff.chunkingMode = chunk`, default): the diff is split coherently — per file, then per hunk (with the file header repeated) if a single file exceeds the budget — and each part is sent in its own request. Nothing is truncated anymore.
+- Review: reports of all parts are concatenated in the report panel. Commit message: each part is summarized first, then one commit message is synthesized from the summaries (n+1 requests for n parts).
+- `truncate` mode keeps the previous single-request behavior.
+
 ## 0.2.1 — 2026-09-16
 
 - Raised the default AI request timeout from 60s to 5 minutes (local models such as Ollama need it, especially while the model loads on first call).

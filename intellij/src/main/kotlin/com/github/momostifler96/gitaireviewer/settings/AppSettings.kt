@@ -22,6 +22,7 @@ class AppSettings : PersistentStateComponent<AppSettings.State> {
         var reviewSystemPrompt: String = DEFAULT_REVIEW_PROMPT,
         var commitSystemPrompt: String = DEFAULT_COMMIT_PROMPT,
         var diffMaxChars: Int = 60_000,
+        var chunkingMode: String = "chunk",
         var includeUntracked: Boolean = true,
         var timeoutMs: Int = 300_000,
     )

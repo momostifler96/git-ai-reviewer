@@ -24,6 +24,7 @@ export interface AiSettings {
     readonly outputLanguage: string;
     readonly diffMaxChars: number;
     readonly includeUntracked: boolean;
+    readonly chunkingMode: 'chunk' | 'truncate';
     readonly reviewSystemPrompt: string;
     readonly commitSystemPrompt: string;
 }
@@ -112,6 +113,7 @@ export function getSettings(): AiSettings {
         outputLanguage: config.get<string>('outputLanguage', 'English'),
         diffMaxChars: Math.max(1_000, config.get<number>('diff.maxChars', 60_000)),
         includeUntracked: config.get<boolean>('diff.includeUntracked', true),
+        chunkingMode: config.get<string>('diff.chunkingMode', 'chunk') === 'truncate' ? 'truncate' : 'chunk',
         reviewSystemPrompt:
             config.get<string>('prompts.reviewSystem', '').trim() || DEFAULT_REVIEW_SYSTEM_PROMPT,
         commitSystemPrompt:

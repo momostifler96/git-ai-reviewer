@@ -103,9 +103,19 @@ Exemple de prompt de revue personnalisé :
 
 | Réglage | Défaut | Description |
 | --- | --- | --- |
-| `gitAiReview.diff.maxChars` | `60000` | Taille max du diff envoyé à l'IA (au-delà : tronqué, et l'IA en est avertie). |
+| `gitAiReview.diff.maxChars` | `60000` | Taille max du diff **par requête IA** (caractères). |
+| `gitAiReview.diff.chunkingMode` | `chunk` | Au-delà de la limite : `chunk` = découpage en parts cohérentes envoyées dans des requêtes séparées (rien n'est perdu) ; `truncate` = troncature en une seule requête (ancien comportement). |
 | `gitAiReview.diff.includeUntracked` | `true` | Inclure les fichiers non suivis dans la revue des changements non commités. |
 | `gitAiReview.request.timeoutMs` | `300000` | Timeout HTTP des requêtes IA (5 min par défaut — les modèles locaux comme Ollama sont lents, surtout au premier appel pendant le chargement du modèle). |
+
+### Découpage (chunking) des gros diffs
+
+En mode `chunk` (défaut), un diff trop grand pour une seule requête est découpé de façon **cohérente** : d'abord par fichier (un fichier n'est jamais mélangé avec un autre), puis par hunk `@@` si un seul fichier dépasse la limite — chaque part répète l'en-tête `diff --git a/… b/…` pour rester auto-portante. Chaque part part dans **sa propre requête** (n parts = n requêtes) :
+
+- **revue** : chaque part est revue séparément et les rapports sont concaténés dans le panneau (séparés par un trait) ;
+- **message de commit** : chaque part est d'abord résumée en points clés (requêtes 1..n), puis un message unique est synthétisé à partir des résumés (requête n+1).
+
+Le diffstat complet est joint à chaque requête pour donner le contexte global.
 
 ## Développement
 

@@ -3,6 +3,7 @@ import { promises as fsp } from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
 import * as vscode from 'vscode';
+import { buildChunks, splitIntoFileBlocks } from './chunking';
 
 const execFileAsync = promisify(execFile);
 
@@ -106,11 +107,15 @@ async function diffInfo(root: string, baseArgs: string[]): Promise<DiffPart> {
     };
 }
 
+export type ChunkingMode = 'chunk' | 'truncate';
+
 export interface UncommittedDiff {
-    readonly diff: string;
+    /** Coherent parts of the diff — one entry per AI request. */
+    readonly chunks: readonly string[];
     readonly files: readonly string[];
     readonly stats: string;
     readonly branch: string;
+    /** True only when the content was actually cut (chunking mode 'truncate'). */
     readonly truncated: boolean;
 }
 
@@ -119,19 +124,20 @@ export interface CollectDiffOptions {
     readonly mode: 'staged' | 'all';
     readonly includeUntracked: boolean;
     readonly maxChars: number;
+    readonly chunking: ChunkingMode;
 }
 
 export async function collectDiff(root: string, options: CollectDiffOptions): Promise<UncommittedDiff> {
     const withHead = await hasHead(root);
     const branch = await currentBranch(root);
 
-    const parts: string[] = [];
+    const outputs: string[] = [];
     const stats: string[] = [];
     const files = new Set<string>();
 
     const push = (part: DiffPart): void => {
         if (part.patch.trim()) {
-            parts.push(part.patch);
+            outputs.push(part.patch);
         }
         part.names.forEach((name) => files.add(name));
         if (part.stat) {
@@ -154,24 +160,42 @@ export async function collectDiff(root: string, options: CollectDiffOptions): Pr
         for (const file of untracked.slice(0, MAX_UNTRACKED_FILES)) {
             const patch = await untrackedDiff(root, file);
             if (patch) {
-                parts.push(patch);
+                outputs.push(patch);
                 files.add(file);
             }
         }
     }
 
-    let diff = parts.join('\n');
-    let truncated = false;
-    if (diff.length > options.maxChars) {
-        truncated = true;
-        diff = `${diff.slice(0, options.maxChars)}\n\n[... diff truncated at ${options.maxChars} characters ...]`;
+    const blocks = splitIntoFileBlocks(outputs);
+    const statsText = stats.join('\n');
+
+    if (options.chunking === 'truncate') {
+        const joined = blocks.join('\n');
+        if (joined.length <= options.maxChars) {
+            return {
+                chunks: [joined],
+                files: [...files].sort(),
+                stats: statsText,
+                branch: branch || '(no commits yet)',
+                truncated: false,
+            };
+        }
+        return {
+            chunks: [
+                `${joined.slice(0, options.maxChars)}\n\n[... diff truncated at ${options.maxChars} characters ...]`,
+            ],
+            files: [...files].sort(),
+            stats: statsText,
+            branch: branch || '(no commits yet)',
+            truncated: true,
+        };
     }
 
     return {
-        diff,
+        chunks: buildChunks(blocks, options.maxChars),
         files: [...files].sort(),
-        stats: stats.join('\n'),
+        stats: statsText,
         branch: branch || '(no commits yet)',
-        truncated,
+        truncated: false,
     };
 }

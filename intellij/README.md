@@ -4,6 +4,7 @@ Version IntelliJ de l'extension [Git AI Reviewer](../README.md) (VS Code). Même
 
 - 🔍 **Review Uncommitted Changes (AI)** — revue IA des changements non commités (staged + unstaged + fichiers non suivis), rapport affiché dans la tool window « Git AI Review » ;
 - ✉️ **Generate Commit Message (AI)** — message de commit au format Conventional Commits généré depuis les changements stagés (propose tout le non-commité si rien n'est stagé), présenté dans une boîte de dialogue éditable puis copié dans le presse-papier à coller dans le champ de commit ;
+- 🧩 **gros diffs sans troncature** — au-delà de la taille max par requête, le diff est découpé en parts cohérentes (par fichier, puis par hunk `@@` avec l'en-tête répété) et chaque part part dans **sa propre requête** : les rapports de revue sont concaténés, et le message de commit est synthétisé à partir de résumés par part (réglage « Oversized diff handling » : `chunk` par défaut, `truncate` pour l'ancien comportement) ;
 - 🔌 **providers OpenAI-compatibles** (OpenAI, Ollama, LM Studio, OpenRouter, Groq, vLLM…) avec un provider **par défaut**, un dédié aux **revues** et un dédié aux **commits** (vide = hérite du défaut) ;
 - 📝 **prompts système personnalisables** pour la revue et le commit, avec le placeholder `{language}` (18 langues au sélecteur) ;
 - 🔑 clés API stockées dans le **coffre-fort de l'IDE** (PasswordSafe : Keychain macOS / Credential Manager Windows / KeePassXC Linux).
